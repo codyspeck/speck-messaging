@@ -8,18 +8,19 @@ public class MessagingConfiguration(IServiceCollection services)
     
     public Dictionary<Type, Func<IServiceProvider, IEndpoint>> EndpointFactories { get; } = [];
 
-    internal Dictionary<Type, Func<IServiceProvider, IConsumerWrapper>> ConsumerFactories { get; } = [];
+    internal Dictionary<Type, Func<IServiceProvider, IConsumePipeline>> ConsumerFactories { get; } = [];
     
     internal MessageTypeRegistry MessageTypeRegistry { get; } = new();
 
     public MessagingConfiguration AddConsumer<TMessage, TConsumer>()
         where TConsumer : class, IConsumer<TMessage>
     {
-        Services.AddTransient<TConsumer>();
-
+        Services.AddTransient<IConsumer<TMessage>, TConsumer>();
+        Services.AddSingleton<ConsumePipeline<TMessage>>();
+        
         ConsumerFactories.Add(
             typeof(TMessage),
-            provider => new ConsumerWrapper<TMessage>(provider.GetRequiredService<TConsumer>()));
+            provider => provider.GetRequiredService<ConsumePipeline<TMessage>>());
 
         return this;
     }

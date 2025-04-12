@@ -3,7 +3,7 @@ namespace Speck.Messaging;
 internal class MessageReceiver(
     MessageTypeRegistry messageTypeRegistry,
     IMessageSerializer messageSerializer,
-    Func<Type, IConsumerWrapper> consumerWrapperFactory)
+    Func<Type, IConsumePipeline> consumePipelineFactory)
 {
     public async Task ReceiveAsync(MessageEnvelope envelope, CancellationToken cancellationToken)
     {
@@ -11,8 +11,8 @@ internal class MessageReceiver(
 
         var message = messageSerializer.Deserialize(envelope.Body, messageType);
         
-        await consumerWrapperFactory
+        await consumePipelineFactory
             .Invoke(messageType)
-            .ConsumeAsync(message, cancellationToken);
+            .SendAsync(message, cancellationToken);
     }    
 }

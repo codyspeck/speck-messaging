@@ -20,7 +20,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<Func<Type, IEndpoint>>(
             provider => messageType => messagingConfiguration.EndpointFactories[messageType](provider));
         
-        services.AddSingleton<Func<Type, IConsumerWrapper>>(
+        services.AddSingleton<Func<Type, IConsumePipeline>>(
             provider => messageType => messagingConfiguration.ConsumerFactories[messageType](provider));
         
         services.AddSingleton(messagingConfiguration.EndpointFactories);
