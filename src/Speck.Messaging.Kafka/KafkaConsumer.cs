@@ -20,15 +20,10 @@ internal class KafkaConsumer(
         await using var consumePipeline = DataflowPipelineBuilder.Create<ConsumeResult<string, string>>()
             .Select(async consumeResult =>
             {
-                var messageEnvelope = new MessageEnvelope(
-                    consumeResult.Message.Value,
-                    consumeConfiguration.ExplicitMessageType);
-
-                foreach (var header in consumeResult.Message.Headers)
-                {
-                    messageEnvelope.Headers.Add(header.Key, Encoding.UTF8.GetString(header.GetValueBytes()));
-                }
-
+                var messageEnvelope = new MessageEnvelope(consumeResult.Message.Value)
+                    .WithExplicitMessageType(consumeConfiguration.ExplicitMessageType)
+                    .WithHeaders(consumeResult.Message.Headers);
+                
                 await messageReceiver.ReceiveAsync(messageEnvelope, stoppingToken);
 
                 return consumeResult;
