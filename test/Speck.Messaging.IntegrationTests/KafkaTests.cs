@@ -1,14 +1,24 @@
+using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Polly;
+using Polly.Retry;
 using Speck.Messaging.Kafka;
 
 namespace Speck.Messaging.IntegrationTests;
 
-public class Tests
+public class KafkaTests
 {
+    private static readonly ResiliencePipeline Retry = new ResiliencePipelineBuilder()
+        .AddRetry(new RetryStrategyOptions())
+        .Build();
+    
     [Test]
     public async Task Test()
     {
+        var handledMessages = new HandledMessages();
+        
         await using var provider = new ServiceCollection()
+            .AddSingleton(handledMessages)
             .AddMessaging(messaging => messaging
                 .AddMessage<TestMessage>("test-message")
                 .AddConsumer<TestMessage, TestMessageConsumer>()
@@ -24,19 +34,26 @@ public class Tests
             .BuildServiceProvider();
         
         var sender = provider.GetRequiredService<IMessageSender>();
-        
-        await sender.SendAsync(new TestMessage());
 
-        await Task.Delay(5000);
+        var testMessage = TestMessage.Create();
+        
+        await sender.SendAsync(testMessage);
+
+        Retry.Execute(() => handledMessages.Should().Contain(testMessage));
     }
 
-    private class TestMessage;
+    private class HandledMessages : List<TestMessage>;
 
-    private class TestMessageConsumer : IConsumer<TestMessage>
+    private record TestMessage(Guid Id)
+    {
+        public static TestMessage Create() => new(Guid.NewGuid());
+    };
+
+    private class TestMessageConsumer(HandledMessages handledMessages) : IConsumer<TestMessage>
     {
         public Task ConsumeAsync(TestMessage message, CancellationToken cancellationToken)
         {
-            Console.WriteLine($"Consumed message: {message}");
+            handledMessages.Add(message);
             return Task.CompletedTask;
         }
     }
