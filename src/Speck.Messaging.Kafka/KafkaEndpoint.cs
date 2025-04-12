@@ -1,4 +1,3 @@
-using System.Text;
 using Confluent.Kafka;
 
 namespace Speck.Messaging.Kafka;
@@ -10,20 +9,11 @@ internal sealed class KafkaEndpoint(string queue, Wrapper<ClientConfig> clientCo
     
     public async Task SendAsync(MessageEnvelope messageEnvelope)
     {
-        var headers = new Headers();
-        
-        foreach (var header in messageEnvelope.Headers)
+        await _producer.ProduceAsync(queue, new Message<string, string>
         {
-            headers.Add(header.Key, Encoding.UTF8.GetBytes(header.Value));
-        }
-        
-        var message = new Message<string, string>
-        {
-            Headers = headers,
+            Headers = messageEnvelope.GetHeaders(),
             Value = messageEnvelope.Body,
-        };
-
-        await _producer.ProduceAsync(queue, message);
+        });
     }
 
     public void Dispose()
