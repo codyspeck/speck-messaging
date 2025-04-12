@@ -32,6 +32,8 @@ internal class KafkaConsumer(
             }
             
             await messageReceiver.ReceiveAsync(messageEnvelope, stoppingToken);
+            
+            consumer.StoreOffset(consumeResult);
         }
     }
 }
