@@ -12,11 +12,18 @@ public class MessagingConfiguration(IServiceCollection services)
     
     internal MessageTypeRegistry MessageTypeRegistry { get; } = new();
 
-    public MessagingConfiguration AddConsumer<TMessage, TConsumer>()
+    public MessagingConfiguration AddConsumer<TMessage, TConsumer>(Action<ConsumerConfiguration> configure)
         where TConsumer : class, IConsumer<TMessage>
     {
+        var consumerConfiguration = new ConsumerConfiguration();
+        
+        configure(consumerConfiguration);
+        
         Services.AddTransient<IConsumer<TMessage>, TConsumer>();
-        Services.AddSingleton<ConsumePipeline<TMessage>>();
+        
+        Services.AddSingleton<ConsumePipeline<TMessage>>(provider => new ConsumePipeline<TMessage>(
+            consumerConfiguration,
+            provider.GetRequiredService<IServiceScopeFactory>()));
         
         ConsumerFactories.Add(
             typeof(TMessage),

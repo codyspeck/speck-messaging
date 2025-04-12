@@ -21,7 +21,9 @@ public class KafkaTests
             .AddSingleton(handledMessages)
             .AddMessaging(messaging => messaging
                 .AddMessage<TestMessage>("test-message")
-                .AddConsumer<TestMessage, TestMessageConsumer>()
+                .AddConsumer<TestMessage, TestMessageConsumer>(consumer => consumer
+                    .WithBoundedCapacity(1)
+                    .WithMaxDegreeOfParallelism(1))
                 .AddKafka(kafka => kafka
                     .ConfigureAllClients(config =>
                     {
