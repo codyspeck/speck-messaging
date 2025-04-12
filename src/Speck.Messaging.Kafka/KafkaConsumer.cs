@@ -49,5 +49,4 @@ internal class KafkaConsumer(
 
         return consumeResult;
     }
-
 }
