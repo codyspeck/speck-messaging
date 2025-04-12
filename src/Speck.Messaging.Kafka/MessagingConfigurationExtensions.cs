@@ -47,7 +47,7 @@ public static class MessagingConfigurationExtensions
         {
             messagingConfiguration.Services.AddSingleton<IHostedService>(provider =>
                 new KafkaConsumer(
-                    consumeConfiguration.Queue,
+                    consumeConfiguration,
                     provider.GetRequiredService<Wrapper<ConsumerConfig>>(),
                     provider.GetRequiredService<MessageReceiver>()));
         }

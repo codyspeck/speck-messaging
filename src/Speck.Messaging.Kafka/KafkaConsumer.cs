@@ -4,7 +4,10 @@ using Microsoft.Extensions.Hosting;
 
 namespace Speck.Messaging.Kafka;
 
-internal class KafkaConsumer(string queue, Wrapper<ConsumerConfig> config, MessageReceiver messageReceiver)
+internal class KafkaConsumer(
+    KafkaConsumeConfiguration consumeConfiguration,
+    Wrapper<ConsumerConfig> config,
+    MessageReceiver messageReceiver)
     : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -13,13 +16,15 @@ internal class KafkaConsumer(string queue, Wrapper<ConsumerConfig> config, Messa
         
         using var consumer = new ConsumerBuilder<string, string>(config.Value).Build();
         
-        consumer.Subscribe(queue);
+        consumer.Subscribe(consumeConfiguration.Queue);
         
         while (!stoppingToken.IsCancellationRequested)
         {
             var consumeResult = consumer.Consume(stoppingToken);
             
-            var messageEnvelope = new MessageEnvelope(consumeResult.Message.Value);
+            var messageEnvelope = new MessageEnvelope(
+                consumeResult.Message.Value,
+                consumeConfiguration.ExplicitMessageType);
 
             foreach (var header in consumeResult.Message.Headers)
             {
