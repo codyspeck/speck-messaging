@@ -1,4 +1,5 @@
 using System.Text;
+using System.Threading.Tasks.Dataflow;
 using Confluent.Kafka;
 using Microsoft.Extensions.Hosting;
 using Speck.DataflowExtensions;
@@ -27,6 +28,11 @@ internal class KafkaConsumer(
                 await messageReceiver.ReceiveAsync(messageEnvelope, stoppingToken);
 
                 return consumeResult;
+            }, new ExecutionDataflowBlockOptions
+            {
+                CancellationToken = stoppingToken,
+                BoundedCapacity = consumeConfiguration.BoundedCapacity,
+                MaxDegreeOfParallelism = consumeConfiguration.MaxDegreeOfParallelism
             })
             .Build(consumer.StoreOffset);
         
