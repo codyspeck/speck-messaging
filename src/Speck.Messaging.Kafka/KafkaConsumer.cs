@@ -1,6 +1,6 @@
-using System.Text;
 using System.Threading.Tasks.Dataflow;
 using Confluent.Kafka;
+using Confluent.Kafka.Admin;
 using Microsoft.Extensions.Hosting;
 using Speck.DataflowExtensions;
 
@@ -8,14 +8,22 @@ namespace Speck.Messaging.Kafka;
 
 internal class KafkaConsumer(
     KafkaConsumeConfiguration consumeConfiguration,
-    Wrapper<ConsumerConfig> config,
+    Wrapper<AdminClientConfig> adminClientConfig,
+    Wrapper<ConsumerConfig> consumerConfig,
     MessageReceiver messageReceiver)
     : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using var consumer = new ConsumerBuilder<string, string>(config.Value).Build();
+        if (consumeConfiguration.CreateOnStartup)
+        {
+            using var admin = new AdminClientBuilder(adminClientConfig.Value).Build();
 
+            await admin.TryCreateTopicAsync(consumeConfiguration.Queue);
+        }
+        
+        using var consumer = new ConsumerBuilder<string, string>(consumerConfig.Value).Build();
+        
         consumer.Subscribe(consumeConfiguration.Queue);
 
         await using var consumePipeline = DataflowPipelineBuilder.Create<ConsumeResult<string, string>>()

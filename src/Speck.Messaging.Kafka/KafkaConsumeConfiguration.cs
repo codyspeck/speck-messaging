@@ -8,8 +8,17 @@ public class KafkaConsumeConfiguration(string queue)
     
     public int MaxDegreeOfParallelism { get; private set; } = 1;
 
+    public bool CreateOnStartup { get; private set; }
+
     public Type? ExplicitMessageType { get; private set; }
 
+    public KafkaConsumeConfiguration CreateOnStartupIf(bool condition)
+    {
+        CreateOnStartup = condition;
+
+        return this;
+    }
+    
     public KafkaConsumeConfiguration WithBoundedCapacity(int boundedCapacity)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(boundedCapacity);

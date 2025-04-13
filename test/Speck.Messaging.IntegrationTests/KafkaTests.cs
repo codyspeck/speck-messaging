@@ -1,5 +1,9 @@
+using System.Diagnostics.CodeAnalysis;
+using Confluent.Kafka;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Hosting.Testing;
 using Polly;
 using Polly.Retry;
 using Speck.Messaging.Kafka;
@@ -13,33 +17,43 @@ public class KafkaTests
         .Build();
     
     [Test]
+    [Experimental("EXTEXP0016")]
     public async Task Test()
     {
         var handledMessages = new HandledMessages();
         
-        await using var provider = new ServiceCollection()
-            .AddSingleton(handledMessages)
-            .AddMessaging(messaging => messaging
-                .AddMessage<TestMessage>("test-message")
-                .AddConsumer<TestMessage, TestMessageConsumer>(consumer => consumer
-                    .WithBoundedCapacity(1)
-                    .WithMaxDegreeOfParallelism(1))
-                .AddKafka(kafka => kafka
-                    .ConfigureAllClients(config =>
-                    {
-                        config.BootstrapServers = KafkaFixture.KafkaContainer.GetBootstrapAddress();
-                    })
-                    .ConsumeFrom("yeet")
-                    .SendTo("yeet", sender => sender
-                        .CreateOnStartupIf(true)
-                        .Message<TestMessage>())))
-            .BuildServiceProvider();
-        
-        var sender = provider.GetRequiredService<IMessageSender>();
+        using var host = FakeHost.CreateBuilder()
+            .ConfigureServices(services => services
+                .AddSingleton(handledMessages)
+                .AddMessaging(messaging => messaging
+                    .AddMessage<TestMessage>("test-message")
+                    .AddConsumer<TestMessage, TestMessageConsumer>(consumer => consumer
+                        .WithBoundedCapacity(1)
+                        .WithMaxDegreeOfParallelism(1))
+                    .AddKafka(kafka => kafka
+                        .ConfigureAllClients(config =>
+                        {
+                            config.BootstrapServers = KafkaFixture.KafkaContainer.GetBootstrapAddress();
+                        })
+                        .ConfigureAllConsumerClients(config =>
+                        {
+                            config.GroupId = "test";
+                            config.AutoOffsetReset = AutoOffsetReset.Earliest;
+                        })
+                        .ConsumeFrom("yeet", consumer => consumer
+                            .CreateOnStartupIf(true))
+                        .SendTo("yeet", sender => sender
+                            .CreateOnStartupIf(true)
+                            .Message<TestMessage>()))))
+            .Build();
 
+        await host.StartAsync();
+        
         var testMessage = TestMessage.Create();
         
-        await sender.SendAsync(testMessage);
+        await host.Services
+            .GetRequiredService<IMessageSender>()
+            .SendAsync(testMessage);
 
         Retry.Execute(() => handledMessages.Should().Contain(testMessage));
     }

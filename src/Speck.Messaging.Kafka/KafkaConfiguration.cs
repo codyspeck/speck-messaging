@@ -28,7 +28,14 @@ public class KafkaConfiguration
 
     public KafkaConfiguration ConsumeFrom(string queue)
     {
+        return ConsumeFrom(queue, _ => { });
+    }
+    
+    public KafkaConfiguration ConsumeFrom(string queue, Action<KafkaConsumeConfiguration> configure)
+    {
         var consumeConfiguration = new KafkaConsumeConfiguration(queue);
+        
+        configure(consumeConfiguration);
         
         ConsumeConfigurations.Add(consumeConfiguration);
 

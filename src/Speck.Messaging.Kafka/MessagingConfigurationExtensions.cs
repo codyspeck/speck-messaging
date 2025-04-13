@@ -38,9 +38,16 @@ public static class MessagingConfigurationExtensions
 
             var consumerConfig = new ConsumerConfig(clientConfig.Value);
 
-            kafkaConfiguration.ConfigureAllClientsAction(consumerConfig);
+            kafkaConfiguration.ConfigureAllConsumerClientsAction(consumerConfig);
 
             return new Wrapper<ConsumerConfig>(consumerConfig);
+        });
+        
+        messagingConfiguration.Services.AddTransient(provider =>
+        {
+            var clientConfig = provider.GetRequiredService<Wrapper<ClientConfig>>();
+            
+            return new Wrapper<AdminClientConfig>(new AdminClientConfig(clientConfig.Value));
         });
 
         foreach (var consumeConfiguration in kafkaConfiguration.ConsumeConfigurations)
@@ -48,6 +55,7 @@ public static class MessagingConfigurationExtensions
             messagingConfiguration.Services.AddSingleton<IHostedService>(provider =>
                 new KafkaConsumer(
                     consumeConfiguration,
+                    provider.GetRequiredService<Wrapper<AdminClientConfig>>(),
                     provider.GetRequiredService<Wrapper<ConsumerConfig>>(),
                     provider.GetRequiredService<MessageReceiver>()));
         }
@@ -59,7 +67,7 @@ public static class MessagingConfigurationExtensions
                 messagingConfiguration.Services.AddSingleton<IHostedService>(provider =>
                     new KafkaQueueBootstrapService(
                         sendToConfiguration.Queue,
-                        provider.GetRequiredService<Wrapper<ClientConfig>>()));
+                        provider.GetRequiredService<Wrapper<AdminClientConfig>>()));
             }
             
             foreach (var messageType in sendToConfiguration.MessageTypes)
