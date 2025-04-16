@@ -12,6 +12,26 @@ public class MessagingConfiguration(IServiceCollection services)
     
     internal MessageTypeRegistry MessageTypeRegistry { get; } = new();
 
+    public MessagingConfiguration AddBatchConsumer<TMessage, TConsumer>(Action<BatchConsumerConfiguration> configure)
+        where TConsumer : class, IBatchConsumer<TMessage>
+    {
+        var batchConsumerConfiguration = new BatchConsumerConfiguration();
+        
+        configure(batchConsumerConfiguration);
+
+        Services.AddTransient<IBatchConsumer<TMessage>, TConsumer>();
+        
+        Services.AddSingleton<BatchConsumePipeline<TMessage>>(provider => new BatchConsumePipeline<TMessage>(
+            batchConsumerConfiguration,
+            provider.GetRequiredService<IServiceScopeFactory>()));
+        
+        ConsumerFactories.Add(
+            typeof(TMessage),
+            provider => provider.GetRequiredService<BatchConsumePipeline<TMessage>>());
+
+        return this;
+    }
+    
     public MessagingConfiguration AddConsumer<TMessage, TConsumer>(Action<ConsumerConfiguration> configure)
         where TConsumer : class, IConsumer<TMessage>
     {
