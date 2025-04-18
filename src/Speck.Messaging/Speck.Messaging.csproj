@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Speck.Messaging.Kafka" />
+    <InternalsVisibleTo Include="Speck.Messaging.Sqs" />
   </ItemGroup>
   
   <ItemGroup>

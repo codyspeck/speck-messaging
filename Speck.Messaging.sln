@@ -13,6 +13,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{A998283D-0
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Speck.Messaging.IntegrationTests", "test\Speck.Messaging.IntegrationTests\Speck.Messaging.IntegrationTests.csproj", "{A5D477E8-5E80-4F32-8B6A-7CB1F7D14CBB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Speck.Messaging.Sqs", "src\Speck.Messaging.Sqs\Speck.Messaging.Sqs.csproj", "{2CB69590-D4F7-47C9-80CB-70DCE2011505}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -34,10 +36,15 @@ Global
 		{A5D477E8-5E80-4F32-8B6A-7CB1F7D14CBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A5D477E8-5E80-4F32-8B6A-7CB1F7D14CBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A5D477E8-5E80-4F32-8B6A-7CB1F7D14CBB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2CB69590-D4F7-47C9-80CB-70DCE2011505}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2CB69590-D4F7-47C9-80CB-70DCE2011505}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2CB69590-D4F7-47C9-80CB-70DCE2011505}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2CB69590-D4F7-47C9-80CB-70DCE2011505}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{EDC73DFD-3148-446E-A218-CA2C519355B1} = {02094299-FFD3-42DA-B6F3-178F5A9C9DF2}
 		{CAF454A8-3212-4FB2-9163-59F166C580FA} = {02094299-FFD3-42DA-B6F3-178F5A9C9DF2}
 		{A5D477E8-5E80-4F32-8B6A-7CB1F7D14CBB} = {A998283D-0332-47FF-AD05-4058FA2B6E73}
+		{2CB69590-D4F7-47C9-80CB-70DCE2011505} = {02094299-FFD3-42DA-B6F3-178F5A9C9DF2}
 	EndGlobalSection
 EndGlobal
