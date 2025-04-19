@@ -9,7 +9,17 @@ public static class MessagingConfigurationExtensions
         var sqsConfiguration = new SqsConfiguration();
         
         configure(sqsConfiguration);
-
+        
         return messagingConfiguration;
+    }
+
+    private static void ConfigureServices(
+        MessagingConfiguration messagingConfiguration,
+        SqsConfiguration sqsConfiguration)
+    {
+        foreach (var sendToConfiguration in sqsConfiguration.SendToConfigurations)
+        {
+            messagingConfiguration.EndpointFactories
+        }
     }
 }

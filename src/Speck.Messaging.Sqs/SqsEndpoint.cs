@@ -1,11 +1,16 @@
 ﻿using Amazon.SQS;
+using Amazon.SQS.Model;
 
 namespace Speck.Messaging.Sqs;
 
-internal class SqsEndpoint(IAmazonSQS sqs) : IEndpoint
+internal class SqsEndpoint(string queueUrl, IAmazonSQS sqs) : IEndpoint
 {
-    public Task SendAsync(MessageEnvelope messageEnvelope)
+    public async Task SendAsync(MessageEnvelope messageEnvelope)
     {
-        throw new NotImplementedException();
+        await sqs.SendMessageAsync(new SendMessageRequest
+        {
+            QueueUrl = queueUrl,
+            MessageAttributes = messageEnvelope.ToMessageAttributes()
+        });
     }
 }
