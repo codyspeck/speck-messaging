@@ -16,4 +16,16 @@ internal static class MessageEnvelopeExtensions
                 StringValue = header.Value
             });
     }
+
+    public static MessageEnvelope WithHeaders(
+        this MessageEnvelope messageEnvelope,
+        IDictionary<string, MessageAttributeValue> headers)
+    {
+        foreach (var header in headers)
+        {
+            messageEnvelope.Headers.Add(header.Key, header.Value.StringValue);
+        }
+
+        return messageEnvelope;
+    }
 }
