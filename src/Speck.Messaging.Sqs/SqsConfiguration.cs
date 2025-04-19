@@ -6,9 +6,9 @@ public class SqsConfiguration
 
     internal List<SqsSendToConfiguration> SendToConfigurations { get; } = [];
 
-    public SqsConfiguration ConsumeFrom(string queueUrl, Action<SqsConsumeConfiguration> configure)
+    public SqsConfiguration ConsumeFrom(string queueName, Action<SqsConsumeConfiguration> configure)
     {
-        var sqsConsumeConfiguration = new SqsConsumeConfiguration(queueUrl);
+        var sqsConsumeConfiguration = new SqsConsumeConfiguration(queueName);
         
         configure(sqsConsumeConfiguration);
         
@@ -17,9 +17,9 @@ public class SqsConfiguration
         return this;
     }
     
-    public SqsConfiguration SendTo(string queueUrl, Action<SqsSendToConfiguration> configure)
+    public SqsConfiguration SendTo(string queueName, Action<SqsSendToConfiguration> configure)
     {
-        var sqsSendToConfiguration = new SqsSendToConfiguration(queueUrl);
+        var sqsSendToConfiguration = new SqsSendToConfiguration(queueName);
         
         configure(sqsSendToConfiguration);
 

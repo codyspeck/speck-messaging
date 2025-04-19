@@ -1,8 +1,8 @@
 ﻿namespace Speck.Messaging.Sqs;
 
-public class SqsConsumeConfiguration(string queueUrl)
+public class SqsConsumeConfiguration(string queueName)
 {
-    public string QueueUrl { get; } = queueUrl;
+    public string QueueName { get; } = queueName;
 
     public Type? ExplicitMessageType { get; private set; }
 

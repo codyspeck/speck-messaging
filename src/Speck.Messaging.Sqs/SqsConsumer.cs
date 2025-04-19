@@ -7,11 +7,14 @@ namespace Speck.Messaging.Sqs;
 internal class SqsConsumer(
     IAmazonSQS sqs,
     SqsConsumeConfiguration consumeConfiguration,
+    SqsQueueUrls sqsQueueUrls,
     MessageReceiver messageReceiver)
     : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        var queueUrl = sqsQueueUrls.GetQueueUrl(consumeConfiguration.QueueName);
+        
         while (!stoppingToken.IsCancellationRequested)
         {
             var response = await sqs.ReceiveMessageAsync(
@@ -19,7 +22,7 @@ internal class SqsConsumer(
                 {
                     MessageAttributeNames = { MessageHeaders.MessageType },
                     MaxNumberOfMessages = 10,
-                    QueueUrl = consumeConfiguration.QueueUrl,
+                    QueueUrl = queueUrl,
                 },
                 stoppingToken);
 
@@ -33,7 +36,7 @@ internal class SqsConsumer(
             }
             
             await sqs.DeleteMessageBatchAsync(
-                consumeConfiguration.QueueUrl,
+                queueUrl,
                 response.Messages
                     .Select(message => new DeleteMessageBatchRequestEntry(message.MessageId, message.ReceiptHandle))
                     .ToList(),

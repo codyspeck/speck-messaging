@@ -23,11 +23,22 @@ public static class MessagingConfigurationExtensions
         MessagingConfiguration messagingConfiguration,
         SqsConfiguration sqsConfiguration)
     {
+        messagingConfiguration.Services.AddSingleton<SqsQueueUrls>();
+        
+        messagingConfiguration.Services.AddHostedService(provider => new SqsBootstrapper(
+            sqsConfiguration.ConsumeConfigurations
+                .Select(configuration => configuration.QueueName)
+                .Concat(sqsConfiguration.SendToConfigurations
+                    .Select(configuration => configuration.QueueName)),
+            provider.GetRequiredService<IAmazonSQS>(),
+            provider.GetRequiredService<SqsQueueUrls>()));
+        
         foreach (var consumeConfiguration in sqsConfiguration.ConsumeConfigurations)
         {
             messagingConfiguration.Services.AddSingleton<IHostedService>(provider => new SqsConsumer(
                 provider.GetRequiredService<IAmazonSQS>(),
                 consumeConfiguration,
+                provider.GetRequiredService<SqsQueueUrls>(),
                 provider.GetRequiredService<MessageReceiver>()));
         }
         
@@ -38,7 +49,9 @@ public static class MessagingConfigurationExtensions
                 messagingConfiguration.EndpointFactories.Add(
                     messageType,
                     provider => new SqsEndpoint(
-                        sendToConfiguration.QueueUrl,
+                        provider
+                            .GetRequiredService<SqsQueueUrls>()
+                            .GetQueueUrl(sendToConfiguration.QueueName),
                         provider.GetRequiredService<IAmazonSQS>()));
             }
         }
