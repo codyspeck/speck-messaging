@@ -31,6 +31,13 @@ internal class SqsConsumer(
                 
                 await messageReceiver.ReceiveAsync(envelope, stoppingToken);
             }
+            
+            await sqs.DeleteMessageBatchAsync(
+                consumeConfiguration.QueueUrl,
+                response.Messages
+                    .Select(message => new DeleteMessageBatchRequestEntry(message.MessageId, message.ReceiptHandle))
+                    .ToList(),
+                stoppingToken);
         }
     }
 }
