@@ -1,8 +1,6 @@
-using Amazon.SQS;
-
 namespace Speck.Messaging.Sqs;
 
-internal class SqsQueueUrls(IAmazonSQS sqs)
+internal class SqsQueueUrls
 {
     private readonly Dictionary<string, string> _queueUrls = [];
 
