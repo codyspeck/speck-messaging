@@ -10,7 +10,8 @@ internal class SqsEndpoint(string queueUrl, IAmazonSQS sqs) : IEndpoint
         await sqs.SendMessageAsync(new SendMessageRequest
         {
             QueueUrl = queueUrl,
-            MessageAttributes = messageEnvelope.ToMessageAttributes()
+            MessageAttributes = messageEnvelope.ToMessageAttributes(),
+            MessageBody = messageEnvelope.Body
         });
     }
 }
