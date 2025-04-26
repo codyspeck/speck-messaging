@@ -1,6 +1,7 @@
 ﻿using Amazon.SQS;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace Speck.Messaging.Sqs;
 
@@ -40,6 +41,14 @@ public static class MessagingConfigurationExtensions
                 consumeConfiguration,
                 provider.GetRequiredService<SqsQueueUrls>(),
                 provider.GetRequiredService<MessageReceiver>()));
+        }
+
+        foreach (var queueName in sqsConfiguration.QueuesToCreate)
+        {
+            messagingConfiguration.Services.AddSingleton<IHostedService>(provider => new SqsQueueCreationService(
+                queueName,
+                provider.GetRequiredService<IAmazonSQS>(),
+                provider.GetService<ILogger<SqsQueueCreationService>>()));
         }
         
         foreach (var sendToConfiguration in sqsConfiguration.SendToConfigurations)

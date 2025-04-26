@@ -2,6 +2,8 @@
 
 public class SqsConfiguration
 {
+    internal List<string> QueuesToCreate { get; } = [];
+
     internal List<SqsConsumeConfiguration> ConsumeConfigurations { get; } = [];
 
     internal List<SqsSendToConfiguration> SendToConfigurations { get; } = [];
@@ -14,6 +16,13 @@ public class SqsConfiguration
         
         ConsumeConfigurations.Add(sqsConsumeConfiguration);
 
+        return this;
+    }
+
+    public SqsConfiguration EnsureQueueCreated(string queueName)
+    {
+        QueuesToCreate.Add(queueName);
+        
         return this;
     }
     
