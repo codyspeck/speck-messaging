@@ -26,6 +26,9 @@ internal class SqsConsumer(
                 },
                 stoppingToken);
 
+            if (response.Messages.Count == 0)
+                continue;
+            
             foreach (var message in response.Messages)
             {
                 var envelope = new MessageEnvelope(message.Body)
