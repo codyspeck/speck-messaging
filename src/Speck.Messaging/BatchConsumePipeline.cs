@@ -7,12 +7,12 @@ namespace Speck.Messaging;
 internal sealed class BatchConsumePipeline<TMessage> : IConsumePipeline, IAsyncDisposable
 {
     private readonly IServiceScopeFactory _factory;
-    private readonly DataflowPipeline<DataflowItem<(TMessage, CancellationToken)>> _pipeline;
+    private readonly DataflowPipeline<Completable<(TMessage, CancellationToken)>> _pipeline;
 
     public BatchConsumePipeline(BatchConsumerConfiguration batchConsumerConfiguration, IServiceScopeFactory factory)
     {
         _factory = factory;
-        _pipeline = DataflowPipelineBuilder.Create<DataflowItem<(TMessage, CancellationToken)>>()
+        _pipeline = DataflowPipelineBuilder.Create<Completable<(TMessage, CancellationToken)>>()
             .Batch(
                 batchConsumerConfiguration.BatchSize,
                 TimeSpan.FromMilliseconds(batchConsumerConfiguration.BatchTimeoutInMilliseconds))
@@ -25,12 +25,10 @@ internal sealed class BatchConsumePipeline<TMessage> : IConsumePipeline, IAsyncD
     
     public async Task SendAsync(object message, CancellationToken cancellationToken)
     {
-        var dataflowItem = new DataflowItem<(TMessage, CancellationToken)>(((TMessage)message, cancellationToken));
-        await _pipeline.SendAsync(dataflowItem);
-        await dataflowItem.Task;
+        await _pipeline.SendAndWaitForCompletionAsync(((TMessage)message, cancellationToken));
     }
 
-    private async Task ConsumeAsync(DataflowItem<(TMessage Message, CancellationToken CancellationToken)>[] items)
+    private async Task ConsumeAsync(Completable<(TMessage Message, CancellationToken CancellationToken)>[] items)
     {
         try
         {
@@ -49,7 +47,7 @@ internal sealed class BatchConsumePipeline<TMessage> : IConsumePipeline, IAsyncD
         {
             foreach (var item in items)
             {
-                item.Error(exception);
+                item.Fail(exception);
             }
         }
     }
