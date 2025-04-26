@@ -1,6 +1,7 @@
 ﻿using Amazon.SQS;
 using Amazon.SQS.Model;
 using Microsoft.Extensions.Hosting;
+using Speck.DataflowExtensions;
 
 namespace Speck.Messaging.Sqs;
 
@@ -15,35 +16,41 @@ internal class SqsConsumer(
     {
         var queueUrl = sqsQueueUrls.GetQueueUrl(consumeConfiguration.QueueName);
         
+        await using var pipeline = DataflowPipelineBuilder.Create<List<Message>>()
+            .Build(messages => ConsumeAsync(queueUrl, messages, stoppingToken));
+        
         while (!stoppingToken.IsCancellationRequested)
         {
             var response = await sqs.ReceiveMessageAsync(
                 new ReceiveMessageRequest
                 {
                     MessageAttributeNames = { MessageHeaders.MessageType },
-                    MaxNumberOfMessages = 10,
+                    MaxNumberOfMessages = SqsMessagingConstants.BatchMessageLimit,
                     QueueUrl = queueUrl,
                 },
                 stoppingToken);
 
             if (response.Messages.Count == 0)
                 continue;
-            
-            foreach (var message in response.Messages)
-            {
-                var envelope = new MessageEnvelope(message.Body)
-                    .WithExplicitMessageType(consumeConfiguration.ExplicitMessageType)
-                    .WithHeaders(message.MessageAttributes);
-                
-                await messageReceiver.ReceiveAsync(envelope, stoppingToken);
-            }
-            
-            await sqs.DeleteMessageBatchAsync(
-                queueUrl,
-                response.Messages
-                    .Select(message => new DeleteMessageBatchRequestEntry(message.MessageId, message.ReceiptHandle))
-                    .ToList(),
-                stoppingToken);
+
+            await pipeline.SendAsync(response.Messages);
         }
+    }
+
+    private async Task ConsumeAsync(string queueUrl, List<Message> messages, CancellationToken cancellationToken)
+    {
+        await Task.WhenAll(
+            messages
+                .Select(message => new MessageEnvelope(message.Body)
+                    .WithExplicitMessageType(consumeConfiguration.ExplicitMessageType)
+                    .WithHeaders(message.MessageAttributes))
+                .Select(envelope => messageReceiver.ReceiveAsync(envelope, cancellationToken)));
+        
+        await sqs.DeleteMessageBatchAsync(
+            queueUrl,
+            messages
+                .Select(message => new DeleteMessageBatchRequestEntry(message.MessageId, message.ReceiptHandle))
+                .ToList(),
+            cancellationToken);
     }
 }
