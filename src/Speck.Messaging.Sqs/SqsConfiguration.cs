@@ -8,6 +8,11 @@ public class SqsConfiguration
 
     internal List<SqsSendToConfiguration> SendToConfigurations { get; } = [];
 
+    public SqsConfiguration ConsumeFrom(string queueName)
+    {
+        return ConsumeFrom(queueName, _ => { });
+    }
+    
     public SqsConfiguration ConsumeFrom(string queueName, Action<SqsConsumeConfiguration> configure)
     {
         var sqsConsumeConfiguration = new SqsConsumeConfiguration(queueName);
