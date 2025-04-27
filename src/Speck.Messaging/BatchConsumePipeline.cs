@@ -7,12 +7,17 @@ namespace Speck.Messaging;
 internal sealed class BatchConsumePipeline<TMessage> : IConsumePipeline, IAsyncDisposable
 {
     private readonly IServiceScopeFactory _factory;
-    private readonly DataflowPipeline<Completable<(TMessage, CancellationToken)>> _pipeline;
+    private readonly DataflowPipeline<Completable<TMessage>> _pipeline;
+    private readonly CancellationTokenSource _cancellationTokenSource;
 
-    public BatchConsumePipeline(BatchConsumerConfiguration batchConsumerConfiguration, IServiceScopeFactory factory)
+    public BatchConsumePipeline(
+        BatchConsumerConfiguration batchConsumerConfiguration,
+        IServiceScopeFactory factory,
+        Wrapper<CancellationTokenSource> cancellationTokenSource)
     {
         _factory = factory;
-        _pipeline = DataflowPipelineBuilder.Create<Completable<(TMessage, CancellationToken)>>()
+        _cancellationTokenSource = cancellationTokenSource.Value;
+        _pipeline = DataflowPipelineBuilder.Create<Completable<TMessage>>()
             .Batch(
                 batchConsumerConfiguration.BatchSize,
                 TimeSpan.FromMilliseconds(batchConsumerConfiguration.BatchTimeoutInMilliseconds))
@@ -23,12 +28,12 @@ internal sealed class BatchConsumePipeline<TMessage> : IConsumePipeline, IAsyncD
             });
     }
     
-    public async Task SendAsync(object message, CancellationToken cancellationToken)
+    public async Task SendAsync(object message)
     {
-        await _pipeline.SendAndWaitForCompletionAsync(((TMessage)message, cancellationToken));
+        await _pipeline.SendAndWaitForCompletionAsync((TMessage)message);
     }
 
-    private async Task ConsumeAsync(Completable<(TMessage Message, CancellationToken CancellationToken)>[] items)
+    private async Task ConsumeAsync(Completable<TMessage>[] messages)
     {
         try
         {
@@ -36,18 +41,20 @@ internal sealed class BatchConsumePipeline<TMessage> : IConsumePipeline, IAsyncD
 
             var consumer = scope.ServiceProvider.GetRequiredService<IBatchConsumer<TMessage>>();
 
-            await consumer.ConsumeAsync(items.Select(item => item.Value.Message).ToArray());
+            await consumer.ConsumeAsync(
+                messages.Select(message => message.Value).ToArray(),
+                _cancellationTokenSource.Token);
 
-            foreach (var item in items)
+            foreach (var message in messages)
             {
-                item.Complete();
+                message.Complete();
             }
         }
         catch (Exception exception)
         {
-            foreach (var item in items)
+            foreach (var message in messages)
             {
-                item.Fail(exception);
+                message.Fail(exception);
             }
         }
     }

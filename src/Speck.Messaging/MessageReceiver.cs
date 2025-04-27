@@ -5,7 +5,7 @@ internal class MessageReceiver(
     IMessageSerializer messageSerializer,
     Func<Type, IConsumePipeline> consumePipelineFactory)
 {
-    public async Task ReceiveAsync(MessageEnvelope envelope, CancellationToken cancellationToken)
+    public async Task ReceiveAsync(MessageEnvelope envelope)
     {
         var messageType = messageTypeRegistry.GetMessageType(envelope.Headers[MessageHeaders.MessageType]);
 
@@ -13,6 +13,6 @@ internal class MessageReceiver(
         
         await consumePipelineFactory
             .Invoke(messageType)
-            .SendAsync(message, cancellationToken);
+            .SendAsync(message);
     }    
 }

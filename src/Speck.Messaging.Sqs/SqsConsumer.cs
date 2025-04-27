@@ -44,7 +44,7 @@ internal class SqsConsumer(
                 .Select(message => new MessageEnvelope(message.Body)
                     .WithExplicitMessageType(consumeConfiguration.ExplicitMessageType)
                     .WithHeaders(message.MessageAttributes))
-                .Select(envelope => messageReceiver.ReceiveAsync(envelope, cancellationToken)));
+                .Select(messageReceiver.ReceiveAsync));
         
         await sqs.DeleteMessageBatchAsync(
             queueUrl,

@@ -1,6 +1,5 @@
 using System.Threading.Tasks.Dataflow;
 using Confluent.Kafka;
-using Confluent.Kafka.Admin;
 using Microsoft.Extensions.Hosting;
 using Speck.DataflowExtensions;
 
@@ -27,14 +26,12 @@ internal class KafkaConsumer(
         consumer.Subscribe(consumeConfiguration.Queue);
 
         await using var consumePipeline = DataflowPipelineBuilder.Create<ConsumeResult<string, string>>()
-            .Select(
-                consumeResult => ReceiveMessageAsync(consumeResult, stoppingToken),
-                new ExecutionDataflowBlockOptions
-                {
-                    CancellationToken = stoppingToken,
-                    BoundedCapacity = consumeConfiguration.BoundedCapacity,
-                    MaxDegreeOfParallelism = consumeConfiguration.MaxDegreeOfParallelism
-                })
+            .Select(ReceiveMessageAsync, new ExecutionDataflowBlockOptions
+            {
+                CancellationToken = stoppingToken,
+                BoundedCapacity = consumeConfiguration.BoundedCapacity,
+                MaxDegreeOfParallelism = consumeConfiguration.MaxDegreeOfParallelism
+            })
             .Build(consumer.StoreOffset);
 
         while (!stoppingToken.IsCancellationRequested)
@@ -45,15 +42,13 @@ internal class KafkaConsumer(
         }
     }
 
-    private async Task<ConsumeResult<string, string>> ReceiveMessageAsync(
-        ConsumeResult<string, string> consumeResult,
-        CancellationToken cancellationToken)
+    private async Task<ConsumeResult<string, string>> ReceiveMessageAsync(ConsumeResult<string, string> consumeResult)
     {
         var messageEnvelope = new MessageEnvelope(consumeResult.Message.Value)
             .WithExplicitMessageType(consumeConfiguration.ExplicitMessageType)
             .WithHeaders(consumeResult.Message.Headers);
 
-        await messageReceiver.ReceiveAsync(messageEnvelope, cancellationToken);
+        await messageReceiver.ReceiveAsync(messageEnvelope);
 
         return consumeResult;
     }

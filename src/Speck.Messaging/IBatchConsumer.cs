@@ -2,5 +2,5 @@
 
 public interface IBatchConsumer<in TMessage>
 {
-    Task ConsumeAsync(TMessage[] messages);
+    Task ConsumeAsync(TMessage[] messages, CancellationToken cancellationToken);
 }

@@ -7,12 +7,17 @@ namespace Speck.Messaging;
 internal sealed class ConsumePipeline<TMessage> : IConsumePipeline, IAsyncDisposable
 {
     private readonly IServiceScopeFactory _factory;
-    private readonly DataflowPipeline<Completable<(TMessage, CancellationToken)>> _pipeline;
+    private readonly CancellationTokenSource _cancellationTokenSource;
+    private readonly DataflowPipeline<Completable<TMessage>> _pipeline;
 
-    public ConsumePipeline(ConsumerConfiguration consumerConfiguration, IServiceScopeFactory factory)
+    public ConsumePipeline(
+        ConsumerConfiguration consumerConfiguration,
+        IServiceScopeFactory factory,
+        Wrapper<CancellationTokenSource> cancellationTokenSource)
     {
         _factory = factory;
-        _pipeline = DataflowPipelineBuilder.Create<Completable<(TMessage, CancellationToken)>>()
+        _cancellationTokenSource = cancellationTokenSource.Value;
+        _pipeline = DataflowPipelineBuilder.Create<Completable<TMessage>>()
             .Build(ConsumeAsync, new ExecutionDataflowBlockOptions
             {
                 BoundedCapacity = consumerConfiguration.BoundedCapacity,
@@ -20,12 +25,12 @@ internal sealed class ConsumePipeline<TMessage> : IConsumePipeline, IAsyncDispos
             });
     }
     
-    public async Task SendAsync(object message, CancellationToken cancellationToken)
+    public async Task SendAsync(object message)
     {
-        await _pipeline.SendAndWaitForCompletionAsync(((TMessage)message, cancellationToken));
+        await _pipeline.SendAndWaitForCompletionAsync((TMessage)message);
     }
 
-    private async Task ConsumeAsync(Completable<(TMessage Message, CancellationToken CancellationToken)> item)
+    private async Task ConsumeAsync(Completable<TMessage> message)
     {
         try
         {
@@ -33,13 +38,13 @@ internal sealed class ConsumePipeline<TMessage> : IConsumePipeline, IAsyncDispos
 
             var consumer = scope.ServiceProvider.GetRequiredService<IConsumer<TMessage>>();
 
-            await consumer.ConsumeAsync(item.Value.Message, item.Value.CancellationToken);
+            await consumer.ConsumeAsync(message.Value, _cancellationTokenSource.Token);
 
-            item.Complete();
+            message.Complete();
         }
         catch (Exception exception)
         {
-            item.Fail(exception);
+            message.Fail(exception);
         }
     }
 

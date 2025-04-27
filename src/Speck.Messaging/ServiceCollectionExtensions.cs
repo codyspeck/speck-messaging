@@ -32,5 +32,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<MessageReceiver>();
 
         services.AddSingleton<IMessageSerializer>(new DefaultMessageSerializer());
+        
+        services.AddSingleton(new Wrapper<CancellationTokenSource>(new CancellationTokenSource()));
+
+        services.AddHostedService<HostStoppingService>();
     }
 }

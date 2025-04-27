@@ -2,5 +2,5 @@
 
 internal interface IConsumePipeline
 {
-    Task SendAsync(object message, CancellationToken cancellationToken);
+    Task SendAsync(object message);
 }

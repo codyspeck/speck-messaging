@@ -23,7 +23,8 @@ public class MessagingConfiguration(IServiceCollection services)
         
         Services.AddSingleton<BatchConsumePipeline<TMessage>>(provider => new BatchConsumePipeline<TMessage>(
             batchConsumerConfiguration,
-            provider.GetRequiredService<IServiceScopeFactory>()));
+            provider.GetRequiredService<IServiceScopeFactory>(),
+            provider.GetRequiredService<Wrapper<CancellationTokenSource>>()));
         
         ConsumerFactories.Add(
             typeof(TMessage),
@@ -43,7 +44,8 @@ public class MessagingConfiguration(IServiceCollection services)
         
         Services.AddSingleton<ConsumePipeline<TMessage>>(provider => new ConsumePipeline<TMessage>(
             consumerConfiguration,
-            provider.GetRequiredService<IServiceScopeFactory>()));
+            provider.GetRequiredService<IServiceScopeFactory>(),
+            provider.GetRequiredService<Wrapper<CancellationTokenSource>>()));
         
         ConsumerFactories.Add(
             typeof(TMessage),
